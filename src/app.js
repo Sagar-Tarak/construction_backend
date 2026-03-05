@@ -16,20 +16,52 @@ const { projectRoutes } = require("./features/project");
 const { centralStoreRoutes } = require("./features/central-store");
 const { purchaseRequestRoutes } = require("./features/purchase-request");
 const { purchaseOrderRoutes } = require("./features/purchase-order");
-
+const { materialsReceivedRoutes } = require("./features/materials-received");
+const { projectInventoryRoutes } = require("./features/project-inventory");
+const { materialTransferRoutes } = require("./features/material-transfer");
 // Masters
-const { Designation, getRouter: getDesignationRouter } = require("./features/masters/designation");
-const { Department, router: departmentRouter } = require("./features/masters/department");
-const { GstRate, router: gstRateRouter } = require("./features/masters/gst-rate");
-const { LabourCategory, router: labourCategoryRouter } = require("./features/masters/labour-category");
-const { MeasurementUnit, router: measurementUnitRouter } = require("./features/masters/measurement-unit");
-const { ProjectStatus, router: projectStatusRouter } = require("./features/masters/project-status");
-const { ProjectType, router: projectTypeRouter } = require("./features/masters/project-type");
-const { WorkType, router: workTypeRouter } = require("./features/masters/work-type");
-const { TermsCondition, router: termsConditionRouter } = require("./features/masters/terms-condition");
+const {
+  Designation,
+  getRouter: getDesignationRouter,
+} = require("./features/masters/designation");
+const {
+  Department,
+  router: departmentRouter,
+} = require("./features/masters/department");
+const {
+  GstRate,
+  router: gstRateRouter,
+} = require("./features/masters/gst-rate");
+const {
+  LabourCategory,
+  router: labourCategoryRouter,
+} = require("./features/masters/labour-category");
+const {
+  MeasurementUnit,
+  router: measurementUnitRouter,
+} = require("./features/masters/measurement-unit");
+const {
+  ProjectStatus,
+  router: projectStatusRouter,
+} = require("./features/masters/project-status");
+const {
+  ProjectType,
+  router: projectTypeRouter,
+} = require("./features/masters/project-type");
+const {
+  WorkType,
+  router: workTypeRouter,
+} = require("./features/masters/work-type");
+const {
+  TermsCondition,
+  router: termsConditionRouter,
+} = require("./features/masters/terms-condition");
 
 // Materials
-const { materialRoutes, materialCategoryRoutes } = require("./features/materials");
+const {
+  materialRoutes,
+  materialCategoryRoutes,
+} = require("./features/materials");
 
 const app = express();
 
@@ -80,6 +112,11 @@ app.use("/api/purchase-requests", purchaseRequestRoutes);
 
 app.use("/api/purchase-orders", purchaseOrderRoutes);
 
+app.use("/api/materials-received", materialsReceivedRoutes);
+
+app.use("/api/project-inventory", projectInventoryRoutes);
+
+app.use("/api/material-transfers", materialTransferRoutes);
 // Error middleware must be LAST — catches next(err) from all routes above
 app.use(errorMiddleware);
 
