@@ -21,6 +21,10 @@ const login = async (req, res) => {
         .json({ success: false, message: "Invalid credentials" });
     }
 
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+
     const token = jwt.sign(
       { id: superAdmin._id, type: "superadmin" },
       process.env.JWT_SECRET,
@@ -34,12 +38,12 @@ const login = async (req, res) => {
         superAdmin: {
           _id: superAdmin._id,
           name: superAdmin.name,
-          email: superAdmin.email,
         },
       },
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -49,7 +53,6 @@ const getMe = async (req, res) => {
 };
 
 // GET /api/super-admin/companies
-// Lists all registered tenants with their profile fields only (NOT internal data)
 const getCompanies = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
@@ -150,8 +153,16 @@ const rejectCompany = async (req, res) => {
       });
     }
 
+    const rejectionReason = (req.body.rejection_reason || "").trim();
+    if (!rejectionReason.length) {
+      return res.status(400).json({
+        success: false,
+        message: "rejection_reason is required and cannot be empty",
+      });
+    }
+
+    company.rejection_reason = rejectionReason;
     company.registration_status = "rejected";
-    company.rejection_reason = req.body.rejection_reason;
     await company.save();
 
     res.json({

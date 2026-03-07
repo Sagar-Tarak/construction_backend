@@ -23,7 +23,7 @@ async function seed() {
 
   const existing = await SuperAdmin.findOne({ email });
   if (existing) {
-    console.log(`Super admin already exists: ${email}`);
+    console.log("Super admin already exists");
     process.exit(0);
   }
 
