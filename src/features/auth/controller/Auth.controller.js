@@ -22,7 +22,16 @@ const signAdminToken = (userId) =>
  */
 const register = async (req, res, next) => {
   try {
-    const { company_name, user_email, password, phone, business_address, state, gst_no, pan_no } = req.body;
+    const {
+      company_name,
+      user_email,
+      password,
+      phone,
+      business_address,
+      state,
+      gst_no,
+      pan_no,
+    } = req.body;
 
     // Prevent duplicate company email
     const exists = await User.findOne({ user_email });
@@ -44,12 +53,18 @@ const register = async (req, res, next) => {
       pan_no,
     });
 
-    const token = signAdminToken(user._id);
-
     return res.status(201).json({
       success: true,
-      message: "Account created successfully.",
-      data: { token, user },
+      message:
+        "Registration submitted successfully. Your account is pending approval. You will be notified once approved.",
+      data: {
+        user: {
+          _id: user._id,
+          company_name: user.company_name,
+          user_email: user.user_email,
+          registration_status: user.registration_status,
+        },
+      },
     });
   } catch (err) {
     next(err);
@@ -80,6 +95,20 @@ const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password.",
+      });
+    }
+
+    if (user.registration_status !== "approved") {
+      const messages = {
+        pending:
+          "Your account is awaiting approval. Please wait for admin review.",
+        rejected: `Your registration was rejected. Reason: ${user.rejection_reason || "Please contact support."}`,
+        suspended: "Your account has been suspended. Please contact support.",
+      };
+      return res.status(403).json({
+        success: false,
+        message: messages[user.registration_status] || "Account not approved",
+        registration_status: user.registration_status,
       });
     }
 
@@ -154,7 +183,9 @@ const updateMe = async (req, res, next) => {
       if (taken) {
         return res.status(409).json({
           success: false,
-          errors: { user_email: "This email is already in use by another account." },
+          errors: {
+            user_email: "This email is already in use by another account.",
+          },
         });
       }
     }

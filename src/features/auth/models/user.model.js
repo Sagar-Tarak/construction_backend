@@ -19,6 +19,24 @@ const userSchema = new mongoose.Schema(
     gst_no: { type: String, trim: true },
     pan_no: { type: String, trim: true },
     active: { type: Boolean, default: true },
+    registration_status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "suspended"],
+      default: "pending",
+    },
+    rejection_reason: {
+      type: String,
+      default: undefined,
+    },
+    approved_at: {
+      type: Date,
+      default: undefined,
+    },
+    approved_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuperAdmin",
+      default: undefined,
+    },
   },
   { timestamps: true },
 );

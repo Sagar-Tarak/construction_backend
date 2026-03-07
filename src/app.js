@@ -2,6 +2,7 @@ const express = require("express");
 const connectDB = require("./config/db");
 
 const errorMiddleware = require("./features/auth/middleware/Error.middleware");
+const { superAdminRoutes } = require("./features/super-admin");
 const { appModuleRoutes } = require("./features/app-modules");
 const {
   designationPermissionRoutes,
@@ -75,6 +76,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/member", memberAuthRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 app.use("/api/app-modules", appModuleRoutes);
 
