@@ -14,12 +14,13 @@ const { supplierRoutes } = require("./features/supplier");
 const { vendorRoutes } = require("./features/vendor");
 const { otherPartyRoutes } = require("./features/other-party");
 const { projectRoutes } = require("./features/project");
-const { centralStoreRoutes } = require("./features/central-store");
+const { projectStoreRoutes } = require("./features/project-store");
+const {
+  storeMaterialTransferRoutes,
+} = require("./features/store-material-transfer");
 const { purchaseRequestRoutes } = require("./features/purchase-request");
 const { purchaseOrderRoutes } = require("./features/purchase-order");
 const { materialsReceivedRoutes } = require("./features/materials-received");
-const { projectInventoryRoutes } = require("./features/project-inventory");
-const { materialTransferRoutes } = require("./features/material-transfer");
 // Masters
 const {
   Designation,
@@ -108,7 +109,7 @@ app.use("/api/other-parties", otherPartyRoutes);
 
 app.use("/api/projects", projectRoutes);
 
-app.use("/api/central-stores", centralStoreRoutes);
+app.use("/api/project-stores", projectStoreRoutes);
 
 app.use("/api/purchase-requests", purchaseRequestRoutes);
 
@@ -116,9 +117,7 @@ app.use("/api/purchase-orders", purchaseOrderRoutes);
 
 app.use("/api/materials-received", materialsReceivedRoutes);
 
-app.use("/api/project-inventory", projectInventoryRoutes);
-
-app.use("/api/material-transfers", materialTransferRoutes);
+app.use("/api/store-transfers", storeMaterialTransferRoutes);
 // Error middleware must be LAST — catches next(err) from all routes above
 app.use(errorMiddleware);
 

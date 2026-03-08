@@ -13,11 +13,16 @@ const receivedItemSchema = Joi.object({
     "string.length": "Invalid item ID.",
     "any.required": "Item is required.",
   }),
+  store_id: Joi.string().hex().length(24).required().messages({
+    "string.length": "Invalid store ID.",
+    "any.required": "Store ID is required for each item.",
+  }),
   quantity_received: Joi.number().min(0.01).required().messages({
     "number.min": "Quantity must be greater than 0.",
     "any.required": "Quantity received is required.",
   }),
   unit_rate: Joi.number().min(0).optional().allow(null),
+  gst_rate_value: Joi.number().min(0).optional().allow(null),
   remark: Joi.string().trim().optional().allow(null, ""),
 });
 

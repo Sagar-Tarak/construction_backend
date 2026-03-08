@@ -32,6 +32,15 @@ const materialsReceivedItemSchema = new mongoose.Schema(
       required: true,
       min: 0.01,
     },
+    store_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProjectStore",
+      required: true,
+    },
+    gst_rate_value: {
+      type: Number,
+      default: 0,
+    },
     unit_rate: {
       type: Number,
       default: null,

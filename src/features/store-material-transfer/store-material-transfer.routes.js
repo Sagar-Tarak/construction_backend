@@ -5,19 +5,19 @@ const validate = require("../auth/middleware/validate.middleware");
 const {
   createTransferSchema,
   receiveTransferSchema,
-} = require("./material-transfer.validators");
+} = require("./store-material-transfer.validators");
 const {
-  getAll,
-  getOne,
-  create,
+  createTransfer,
+  getAllTransfers,
+  getTransferById,
   receiveTransfer,
   cancelTransfer,
-  softDelete,
-} = require("./material-transfer.controller");
+  deleteTransfer,
+} = require("./store-material-transfer.controller");
 
-router.get("/", authenticate, getAll);
-router.get("/:id", authenticate, getOne);
-router.post("/", authenticate, validate(createTransferSchema), create);
+router.get("/", authenticate, getAllTransfers);
+router.get("/:id", authenticate, getTransferById);
+router.post("/", authenticate, validate(createTransferSchema), createTransfer);
 router.patch(
   "/:id/receive",
   authenticate,
@@ -25,6 +25,6 @@ router.patch(
   receiveTransfer,
 );
 router.patch("/:id/cancel", authenticate, cancelTransfer);
-router.delete("/:id", authenticate, softDelete);
+router.delete("/:id", authenticate, deleteTransfer);
 
 module.exports = router;

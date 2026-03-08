@@ -1,44 +1,36 @@
 const mongoose = require("mongoose");
 
-const centralStoreRequestItemSchema = new mongoose.Schema(
+const storeMaterialTransferItemSchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    request_id: {
+    transfer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "CentralStoreRequest",
+      ref: "StoreMaterialTransfer",
       required: true,
     },
     item_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Material",
+      ref: "Item",
       required: true,
     },
     quantity: {
       type: Number,
       required: true,
-      min: 0.01,
+      min: 0.0001,
     },
-    unit_rate: {
-      type: Number,
-      default: null,
-    },
-    notes: {
+    remark: {
       type: String,
       trim: true,
-      default: null,
     },
   },
   { timestamps: true },
 );
 
-centralStoreRequestItemSchema.index({ request_id: 1 });
-centralStoreRequestItemSchema.index({ user_id: 1 });
-
 module.exports = mongoose.model(
-  "CentralStoreRequestItem",
-  centralStoreRequestItemSchema,
+  "StoreMaterialTransferItem",
+  storeMaterialTransferItemSchema,
 );

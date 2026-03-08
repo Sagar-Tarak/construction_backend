@@ -1,10 +1,17 @@
 const mongoose = require("mongoose");
 
-const projectInventorySchema = new mongoose.Schema(
+// One record per item per store — live stock balance
+// Never written to manually — always updated via store transactions
+const storeInventorySchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+    store_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProjectStore",
       required: true,
     },
     project_id: {
@@ -14,7 +21,7 @@ const projectInventorySchema = new mongoose.Schema(
     },
     item_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Material",
+      ref: "Item",
       required: true,
     },
     current_quantity: {
@@ -26,7 +33,6 @@ const projectInventorySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-projectInventorySchema.index({ user_id: 1, project_id: 1, item_id: 1 }, { unique: true });
-projectInventorySchema.index({ user_id: 1, project_id: 1 });
+storeInventorySchema.index({ store_id: 1, item_id: 1 }, { unique: true });
 
-module.exports = mongoose.model("ProjectInventory", projectInventorySchema);
+module.exports = mongoose.model("StoreInventory", storeInventorySchema);

@@ -27,57 +27,62 @@ const generateMRNumber = async (user_id) => {
 
 // ── Inventory Update ─────────────────────────────────────────────────────────
 
-/**
- * Updates project inventory when materials are received.
- * For each item received:
- *   1. Upsert project_inventory record (create if not exists)
- *   2. Increment current_quantity
- *   3. Create project_inventory_transaction with type "in"
- *
- * Uses lazy loading to avoid circular dependencies since
- * project-inventory feature is built after this one.
- */
-const updateProjectInventory = async ({
-  user_id,
-  project_id,
-  materials_received_id,
-  received_by,
+// Import at top of file (lazy load to avoid circular deps)
+const updateStoreInventory = async (
+  userId,
+  projectId,
   items,
-}) => {
+  materialsReceivedId,
+) => {
   try {
-    const ProjectInventory = require("../project-inventory/project-inventory.model");
-    const ProjectInventoryTransaction = require("../project-inventory/project-inventory-transaction.model");
+    const { StoreInventory, StoreTransaction } = require("../project-store");
 
     for (const item of items) {
-      // Upsert inventory record — create if first time this item arrives at project
-      await ProjectInventory.findOneAndUpdate(
+      // Update store inventory balance
+      await StoreInventory.findOneAndUpdate(
         {
-          user_id,
-          project_id,
+          store_id: item.store_id,
           item_id: item.item_id,
+          user_id: userId,
         },
         {
           $inc: { current_quantity: item.quantity_received },
-          $setOnInsert: { user_id, project_id, item_id: item.item_id },
+          $setOnInsert: { project_id: projectId },
         },
         { upsert: true, new: true },
       );
 
-      // Record the inbound transaction
-      await ProjectInventoryTransaction.create({
-        user_id,
-        project_id,
+      // Create store transaction record
+      await StoreTransaction.create({
+        user_id: userId,
+        store_id: item.store_id,
+        project_id: projectId,
         item_id: item.item_id,
         transaction_type: "in",
         quantity: item.quantity_received,
-        materials_received_id,
-        performed_by: received_by,
-        remark: item.remark || null,
+        materials_received_id: materialsReceivedId,
       });
     }
   } catch (err) {
-    // Log but don't block the MR creation if inventory models not yet available
-    console.error("Inventory update failed:", err.message);
+    console.error("updateStoreInventory error:", err.message);
+  }
+};
+
+const reverseStoreInventory = async (userId, items, materialsReceivedId) => {
+  try {
+    const { StoreInventory, StoreTransaction } = require("../project-store");
+
+    for (const item of items) {
+      await StoreInventory.findOneAndUpdate(
+        { store_id: item.store_id, item_id: item.item_id, user_id: userId },
+        { $inc: { current_quantity: -item.quantity_received } },
+      );
+    }
+    await StoreTransaction.deleteMany({
+      materials_received_id: materialsReceivedId,
+    });
+  } catch (err) {
+    console.error("reverseStoreInventory error:", err.message);
   }
 };
 
@@ -139,12 +144,10 @@ const getOne = async (req, res, next) => {
     );
 
     if (!record) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Materials received record not found.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Materials received record not found.",
+      });
     }
 
     const items = await MaterialsReceivedItem.find({
@@ -211,6 +214,7 @@ const create = async (req, res, next) => {
     const record = await MaterialsReceived.create({
       user_id: req.user._id,
       materials_received_no,
+      project_id,
       received_date,
       received_by,
       supplier_id: supplier_id || null,
@@ -234,21 +238,17 @@ const create = async (req, res, next) => {
       materials_received_id: record._id,
       purchase_order_item_id: item.purchase_order_item_id || null,
       item_id: item.item_id,
+      store_id: item.store_id,
       quantity_received: item.quantity_received,
       unit_rate: item.unit_rate || null,
+      gst_rate_value: item.gst_rate_value || 0,
       remark: item.remark || null,
     }));
 
     await MaterialsReceivedItem.insertMany(itemDocs);
 
-    // Auto-update project inventory
-    await updateProjectInventory({
-      user_id: req.user._id,
-      project_id,
-      materials_received_id: record._id,
-      received_by,
-      items,
-    });
+    // Auto-update store inventory
+    await updateStoreInventory(req.user._id, project_id, items, record._id);
 
     return res.status(201).json({
       success: true,
@@ -278,12 +278,10 @@ const update = async (req, res, next) => {
     });
 
     if (!record) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Materials received record not found.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Materials received record not found.",
+      });
     }
 
     if (record.status === "completed") {
@@ -329,12 +327,10 @@ const updateStatus = async (req, res, next) => {
     });
 
     if (!record) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Materials received record not found.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Materials received record not found.",
+      });
     }
 
     if (record.status === "completed") {
@@ -374,12 +370,10 @@ const softDelete = async (req, res, next) => {
     });
 
     if (!record) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Materials received record not found.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Materials received record not found.",
+      });
     }
 
     if (record.status === "completed") {
@@ -389,40 +383,11 @@ const softDelete = async (req, res, next) => {
       });
     }
 
-    // Reverse inventory — subtract quantities that were added
-    try {
-      const ProjectInventory = require("../project-inventory/project-inventory.model");
-      const ProjectInventoryTransaction = require("../project-inventory/project-inventory-transaction.model");
-
-      const items = await MaterialsReceivedItem.find({
-        materials_received_id: record._id,
-      });
-
-      // Find the original transaction to get project_id
-      const originalTx = await ProjectInventoryTransaction.findOne({
-        materials_received_id: record._id,
-      });
-
-      if (originalTx && items.length > 0) {
-        for (const item of items) {
-          await ProjectInventory.findOneAndUpdate(
-            {
-              user_id: req.user._id,
-              project_id: originalTx.project_id,
-              item_id: item.item_id,
-            },
-            { $inc: { current_quantity: -item.quantity_received } },
-          );
-        }
-
-        // Delete all related transactions
-        await ProjectInventoryTransaction.deleteMany({
-          materials_received_id: record._id,
-        });
-      }
-    } catch (_) {
-      // Inventory feature not yet loaded — skip reversal
-    }
+    // Reverse store inventory — subtract quantities that were added
+    const items = await MaterialsReceivedItem.find({
+      materials_received_id: record._id,
+    });
+    await reverseStoreInventory(req.user._id, items, record._id);
 
     await MaterialsReceivedItem.deleteMany({
       materials_received_id: record._id,

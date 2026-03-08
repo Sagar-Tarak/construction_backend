@@ -15,6 +15,11 @@ const materialsReceivedSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    project_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
+      required: true,
+    },
     materials_received_no: {
       type: String,
       required: true,
